@@ -1,0 +1,28 @@
+# ---------------------------------------------------------------------------
+# PROJECT CONFIGURATION: Edit this file to define your project.
+# ---------------------------------------------------------------------------
+
+# --- Project Identity ---
+project_name: "Endometriosis Research Initiative"
+one_liner_description: "A research project to investigate the causes and potential treatments for endometriosis."
+
+# --- Technical & User Context ---
+# Guides the Architect in technology choices and the Analyst in user story creation.
+# NOTE: Changes here may require changes in Dockerfile and docker-compose.yml.
+technical_stack:
+  language: "Python 3.12"
+  libraries: "pandas, numpy, scikit-learn, matplotlib"
+  data_storage: "CSV files and a structured file-based system for research data."
+
+# --- Research Objectives & Scope ---
+# Used by the Analyst to generate hypotheses and research plans.
+research_objectives:
+  - "Analyze genetic data to identify potential markers for endometriosis."
+  - "Investigate environmental factors through patient surveys and data."
+  - "Evaluate the effectiveness of existing treatments based on clinical data."
+  - "Develop a predictive model for disease progression."
+
+non_goals:
+  - "Development of a patient-facing application."
+  - "Clinical trials (initially, focus is on data analysis)."
+  - "Real-time data processing."
