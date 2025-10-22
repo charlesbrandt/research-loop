@@ -36,11 +36,24 @@ os.environ["CREWAI_TRACING_ENABLED"] = "false"
 PROJECT_CONFIG_FILE = "project_config.yaml"
 PROMPT_TEMPLATE_FILE = "templates/prompts.yaml"
 OUTPUT_DIR = "./output"
-PLANNING_DIR = f"{OUTPUT_DIR}/planning"
-STORIES_DIR = f"{OUTPUT_DIR}/stories"
+# Phase 1: Research Design
+DESIGN_DIR = f"{OUTPUT_DIR}/1_design"
+
+# Phase 2: Experiment Execution
+EXECUTION_DIR = f"{OUTPUT_DIR}/2_execution"
+EXECUTION_DATA_DIR = f"{EXECUTION_DIR}/data"
+
+# Phase 3: Analysis
+ANALYSIS_DIR = f"{OUTPUT_DIR}/3_analysis"
+ANALYSIS_NOTEBOOKS_DIR = f"{ANALYSIS_DIR}/notebooks"
+
+# Phase 4: Reporting and Dissemination
+REPORTING_DIR = f"{OUTPUT_DIR}/4_reporting"
+REPORTING_FIGURES_DIR = f"{REPORTING_DIR}/figures"
+
+# Common directories
 SRC_DIR = f"{OUTPUT_DIR}/src"
 TESTS_DIR = f"{OUTPUT_DIR}/tests"
-DOCS_DIR = f"{OUTPUT_DIR}/docs"
 LOGS_DIR = f"{OUTPUT_DIR}/logs"
 MAX_FIX_ATTEMPTS = 3
 
@@ -236,8 +249,21 @@ def render_crew_definitions(
 
 
 def create_project_directories(project_dir):
-    os.makedirs(PLANNING_DIR, exist_ok=True)
-    os.makedirs(DOCS_DIR, exist_ok=True)
+    # Phase 1: Research Design
+    os.makedirs(DESIGN_DIR, exist_ok=True)
+
+    # Phase 2: Experiment Execution
+    os.makedirs(EXECUTION_DATA_DIR, exist_ok=True)
+
+    # Phase 3: Analysis
+    os.makedirs(ANALYSIS_NOTEBOOKS_DIR, exist_ok=True)
+
+    # Phase 4: Reporting and Dissemination
+    os.makedirs(REPORTING_FIGURES_DIR, exist_ok=True)
+
+    # Common directories
+    os.makedirs(SRC_DIR, exist_ok=True)
+    os.makedirs(TESTS_DIR, exist_ok=True)
     os.makedirs(LOGS_DIR, exist_ok=True)
 
 
@@ -255,7 +281,7 @@ def run_research_design_crew_tasks(project_config):
         **crew_defs["tasks"]["conduct_literature_review"],
     )
 
-    hypothesis_file_path = os.path.join(PLANNING_DIR, "HYPOTHESIS.md")
+    hypothesis_file_path = os.path.join(DESIGN_DIR, "HYPOTHESIS.md")
     hypothesis_task = Task(
         agent=agents["HypothesisGenerator"],
         name="Generate Research Hypothesis",
@@ -264,7 +290,7 @@ def run_research_design_crew_tasks(project_config):
         **crew_defs["tasks"]["generate_hypothesis"],
     )
 
-    methodology_file_path = os.path.join(PLANNING_DIR, "METHODOLOGY.md")
+    methodology_file_path = os.path.join(DESIGN_DIR, "METHODOLOGY.md")
     methodology_task = Task(
         agent=agents["MethodologyDesigner"],
         name="Design Research Methodology",
@@ -289,7 +315,7 @@ def run_research_design_crew_tasks(project_config):
         output_log_file=os.path.join(LOGS_DIR, "research_design_crew.log"),
     )
     research_design_crew.kickoff()
-    logger.info(f"Research design complete. Documents saved in '{PLANNING_DIR}'.")
+    logger.info(f"Research design complete. Documents saved in '{DESIGN_DIR}'.")
 
 
 def parse_arguments():
@@ -328,8 +354,8 @@ def handle_research_design_phase(project_config, args):
         logger.info("Starting research design phase...")
         run_research_design_crew_tasks(project_config)
 
-        hypothesis_path = os.path.join(PLANNING_DIR, "HYPOTHESIS.md")
-        methodology_path = os.path.join(PLANNING_DIR, "METHODOLOGY.md")
+        hypothesis_path = os.path.join(DESIGN_DIR, "HYPOTHESIS.md")
+        methodology_path = os.path.join(DESIGN_DIR, "METHODOLOGY.md")
 
         if not os.path.exists(hypothesis_path) or not os.path.exists(methodology_path):
             logger.error(
@@ -337,7 +363,7 @@ def handle_research_design_phase(project_config, args):
             )
             sys.exit(1)
 
-        logger.info(f"Research design complete. Documents saved in '{PLANNING_DIR}'.")
+        logger.info(f"Research design complete. Documents saved in '{DESIGN_DIR}'.")
 
         if args.yes:
             logger.info("Auto-approving the research design phase.")
@@ -358,8 +384,8 @@ def handle_research_design_phase(project_config, args):
     else:
         logger.info("Skipping research design phase as requested.")
 
-    hypothesis_path = os.path.join(PLANNING_DIR, "HYPOTHESIS.md")
-    methodology_path = os.path.join(PLANNING_DIR, "METHODOLOGY.md")
+    hypothesis_path = os.path.join(DESIGN_DIR, "HYPOTHESIS.md")
+    methodology_path = os.path.join(DESIGN_DIR, "METHODOLOGY.md")
 
     if os.path.exists(hypothesis_path):
         with open(hypothesis_path, "r") as f:
@@ -384,7 +410,7 @@ def handle_experimentation_phase(project_config, methodology_content):
     }
 
     # Step 1: Experiment Designer creates the experiment protocol
-    experiment_protocol_file_path = os.path.join(PLANNING_DIR, "EXPERIMENT_PROTOCOL.md")
+    experiment_protocol_file_path = os.path.join(DESIGN_DIR, "EXPERIMENT_PROTOCOL.md")
     experiment_protocol_task = Task(
         agent=agents["ExperimentDesigner"],
         name="Design Experiment Protocol",
@@ -436,7 +462,7 @@ def handle_experiment_execution_and_analysis_phase(
     }
 
     # Step 1: Experiment Conductor executes the protocol
-    experiment_results_file_path = os.path.join(PLANNING_DIR, "EXPERIMENT_RESULTS.md")
+    experiment_results_file_path = os.path.join(EXECUTION_DIR, "EXPERIMENT_RESULTS.md")
     conduct_experiment_task = Task(
         agent=agents["ExperimentConductor"],
         name="Conduct Experiment",
@@ -467,7 +493,7 @@ def handle_experiment_execution_and_analysis_phase(
         sys.exit(1)
 
     # Step 2: Data Analyzer analyzes the results
-    analysis_report_file_path = os.path.join(PLANNING_DIR, "ANALYSIS_REPORT.md")
+    analysis_report_file_path = os.path.join(ANALYSIS_DIR, "ANALYSIS_REPORT.md")
     analyze_data_task = Task(
         agent=agents["DataAnalyzer"],
         name="Analyze Experiment Data",
@@ -508,7 +534,7 @@ def handle_reporting_and_dissemination_phase(
     }
 
     # Step 1: Reporter writes the research report
-    research_report_file_path = os.path.join(PLANNING_DIR, "RESEARCH_REPORT.md")
+    research_report_file_path = os.path.join(REPORTING_DIR, "RESEARCH_REPORT.md")
     write_research_report_task = Task(
         agent=agents["Reporter"],
         name="Write Research Report",
@@ -529,7 +555,7 @@ def handle_reporting_and_dissemination_phase(
     reporting_crew.kickoff()
 
     # Step 2: Knowledge Disseminator creates the dissemination plan
-    dissemination_plan_file_path = os.path.join(PLANNING_DIR, "DISSEMINATION_PLAN.md")
+    dissemination_plan_file_path = os.path.join(REPORTING_DIR, "DISSEMINATION_PLAN.md")
     create_dissemination_plan_task = Task(
         agent=agents["KnowledgeDisseminator"],
         name="Create Dissemination Plan",
