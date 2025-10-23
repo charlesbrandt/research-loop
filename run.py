@@ -16,15 +16,9 @@ from pydantic import BaseModel, RootModel, Field
 
 from crewai import Agent, Task, Crew, Process
 from crewai.tasks import TaskOutput
-from langchain_openai import ChatOpenAI
+from crewai.llm import LLM
 from crewai_tools import FileReadTool, FileWriterTool
 
-import litellm
-
-# --- ENVIRONMENT & TELEMETRY ---
-# litellm.set_verbose = True
-# os.environ['LITELLM_LOG'] = 'DEBUG'
-litellm._turn_on_debug()
 
 # See also setting in .env file
 # This will cause problems in subprocesses if enabled
@@ -126,29 +120,6 @@ def setup_logger(log_file_name, append=False):
 # Initial logger setup
 setup_logger("run.log", append=False)
 
-
-# --- LITELLM CALLBACK FOR DETAILED LOGGING ---
-class LiteLLMLoggingCallback:
-    def litellm_pre_call(self, kwargs):
-        model = kwargs.get("model", "unknown")
-        messages = kwargs.get("messages", [])
-        logger.info("LLM Call Pre-Call", extra={"model": model, "messages": messages})
-
-    def litellm_post_call(self, kwargs, response):
-        model = kwargs.get("model", "unknown")
-        if response is None:
-            response_content = "None response"
-        else:
-            response_content = getattr(response, "content", str(response))
-        logger.info(
-            "LLM Call Post-Call", extra={"model": model, "response": response_content}
-        )
-
-    def litellm_failure_callback(self, kwargs, response):
-        model = kwargs.get("model", "unknown")
-        logger.error("LLM Call Failed", extra={"model": model, "error": str(response)})
-
-
 # --- PYDANTIC MODELS ---
 class Stories(RootModel[Dict[str, str]]):
     """Stories is a pydantic class for CrewAI to parse stories into from json output."""
@@ -171,16 +142,16 @@ class ScaffoldOutput(RootModel[Dict[str, str]]):
 
 # --- LLM AND TOOL CONFIGURATION ---
 try:
-    llm = ChatOpenAI(
-        base_url=os.getenv("OPENAI_API_BASE", "http://192.168.2.77:8080/v1"),
-        api_key=os.getenv("OPENAI_API_KEY", "not-needed"),
+    llm = LLM(
+        base_url="http://192.168.2.77:8080/v1",
+        model="gpt-4", # Placeholder, as it requires a model name
+        api_key="not-needed",
         temperature=0.1,
         max_tokens=32000,
     )
-    logger.info("SUCCESS: ChatOpenAI client initialized successfully.")
-    litellm.callbacks = [LiteLLMLoggingCallback()]
+    logger.info("SUCCESS: CrewAI LLM client initialized successfully.")
 except Exception as e:
-    logger.error(f"ERROR: Failed to initialize ChatOpenAI client: {e}", exc_info=True)
+    logger.error(f"ERROR: Failed to initialize CrewAI LLM client: {e}", exc_info=True)
     sys.exit(1)
 
 
@@ -271,9 +242,9 @@ def create_project_directories(project_dir):
 def run_research_design_crew_tasks(project_config):
     """Encapsulates the tasks for the research design crew."""
     crew_defs = render_crew_definitions(project_config)
-    agents = {
-        name: Agent(llm=llm, **props) for name, props in crew_defs["agents"].items()
-    }
+    agents = {}
+    for name, props in crew_defs["agents"].items():
+        agents[name] = Agent(llm=llm, **props)
 
     literature_review_task = Task(
         agent=agents["LiteratureReviewer"],
@@ -405,9 +376,9 @@ def handle_experimentation_phase(project_config, methodology_content):
     crew_defs = render_crew_definitions(
         project_config, methodology_content=methodology_content
     )
-    agents = {
-        name: Agent(llm=llm, **props) for name, props in crew_defs["agents"].items()
-    }
+    agents = {}
+    for name, props in crew_defs["agents"].items():
+        agents[name] = Agent(llm=llm, **props)
 
     # Step 1: Experiment Designer creates the experiment protocol
     experiment_protocol_file_path = os.path.join(DESIGN_DIR, "EXPERIMENT_PROTOCOL.md")
@@ -457,9 +428,9 @@ def handle_experiment_execution_and_analysis_phase(
     crew_defs = render_crew_definitions(
         project_config, experiment_protocol_content=experiment_protocol_content
     )
-    agents = {
-        name: Agent(llm=llm, **props) for name, props in crew_defs["agents"].items()
-    }
+    agents = {}
+    for name, props in crew_defs["agents"].items():
+        agents[name] = Agent(llm=llm, **props)
 
     # Step 1: Experiment Conductor executes the protocol
     experiment_results_file_path = os.path.join(EXECUTION_DIR, "EXPERIMENT_RESULTS.md")
@@ -529,9 +500,9 @@ def handle_reporting_and_dissemination_phase(
     crew_defs = render_crew_definitions(
         project_config, experiment_results_content=experiment_results_content
     )
-    agents = {
-        name: Agent(llm=llm, **props) for name, props in crew_defs["agents"].items()
-    }
+    agents = {}
+    for name, props in crew_defs["agents"].items():
+        agents[name] = Agent(llm=llm, **props)
 
     # Step 1: Reporter writes the research report
     research_report_file_path = os.path.join(REPORTING_DIR, "RESEARCH_REPORT.md")
