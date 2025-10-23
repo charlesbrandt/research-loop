@@ -48,6 +48,12 @@ Configure Your Project:
   - Open and edit `project_config.yaml`.
   - Define your `project_name`, `one_liner_description`, `technical_stack`, `research_objectives`, etc. This is the primary file you need to adapt for a new research project.
 
+Make sure output directories are available:
+
+```
+./setup_new_output.sh
+```
+
 To run the full research workflow:
 
 ```bash
