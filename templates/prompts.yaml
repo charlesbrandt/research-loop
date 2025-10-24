@@ -11,6 +11,7 @@ agents:
     backstory: >
       You are a distinguished scholar, adept at navigating vast scientific databases and distilling complex information.
       You use web search to inform your analysis and structure your literature reviews rigorously.
+    tools: ["search_tool"]
 
   HypothesisGenerator:
     role: "Creative Research Scientist"
@@ -31,7 +32,7 @@ agents:
   ExperimentDesigner:
     role: "Precise Experimental Design Specialist"
     goal: >
-      To design clear, robust experimental protocols based on the methodology, and define success/failure metrics.
+      To design clear, robust experimental protocols based on the methodology, and define success/failure metrics, leveraging the {{ search_tool_name }} for up-to-date information.
     backstory: >
       You ensure experiments are rigorous and reproducible.
 

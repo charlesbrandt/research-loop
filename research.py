@@ -1,7 +1,8 @@
 from crewai import Agent, Task, Crew, Process
 from crewai.llm import LLM
 #from crewai_tools import EXASearchTool, FirecrawlScrapeWebsiteTool
-from crewai_tools import SerperDevTool, ScrapeWebsiteTool
+from crewai_tools import ScrapeWebsiteTool
+from src.tools.search_tools import SearXNGSearchTool
 from dotenv import load_dotenv
 import os
 import sys
@@ -9,6 +10,21 @@ import logging
 from datetime import datetime
 
 load_dotenv()
+
+# Global logger initialization (will be configured in __main__)
+logger = logging.getLogger(__name__)
+
+def log_task_output(task_output):
+    """
+    Callback function to log the output of each CrewAI task.
+    """
+    if task_output:
+        # CrewAI's TaskOutput object has a .raw_output attribute for the actual output string.
+        # If it's a simple string, .raw_output will return it directly.
+        output_data = task_output.raw_output if hasattr(task_output, 'raw_output') else str(task_output)
+        logger.info(f"Task Completed: {output_data}")
+    else:
+        logger.info("Task Completed: No output provided.")
 
 # --- LLM AND TOOL CONFIGURATION ---
 try:
@@ -36,7 +52,7 @@ except Exception as e:
 # For this demonstration, we'll assume the necessary API keys are in the .env file.
 # The user will be responsible for setting up the environment variables.
 
-search_tool = SerperDevTool()  # Placeholder for a robust search API tool
+search_tool = SearXNGSearchTool()
 web_read_tool = ScrapeWebsiteTool()
 # TODO: explore:
 # search_tool = EXASearchTool()
@@ -103,6 +119,7 @@ plan_research_task = Task(
     ),
     expected_output="A structured research plan including key questions, search terms, and a plan for literature review.",
     agent=research_planner_agent,
+    callback=log_task_output,
 )
 
 find_literature_task = Task(
@@ -113,6 +130,7 @@ find_literature_task = Task(
     ),
     expected_output="A list of URLs/DOIs of 5-7 relevant scientific papers related to the research plan.",
     agent=literature_searcher_agent,
+    callback=log_task_output,
 )
 
 synthesize_data_task = Task(
@@ -130,6 +148,7 @@ synthesize_data_task = Task(
     context=[
         find_literature_task
     ],  # This task depends on the output of find_literature_task
+    callback=log_task_output,
 )
 
 analyze_critique_task = Task(
@@ -144,6 +163,7 @@ analyze_critique_task = Task(
     context=[
         synthesize_data_task
     ],  # This task depends on the output of synthesize_data_task
+    callback=log_task_output,
 )
 
 write_report_task = Task(
@@ -159,7 +179,7 @@ write_report_task = Task(
     context=[
         analyze_critique_task
     ],  # This task depends on the output of analyze_critique_task
-    output_file="report.md", # This will be overwritten dynamically
+    callback=log_task_output, # The final report content will be logged
 )
 
 # Build the Crew.
@@ -184,33 +204,41 @@ crew = Crew(
 
 if __name__ == "__main__":
     research_topic = input("Enter your research topic: ")
+
+    # Ensure output directory exists
+    output_dir = "output"
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Setup logging to a timestamped file
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    log_filename = os.path.join(output_dir, f"workflow_log_{timestamp}.log")
+    logging.basicConfig(
+        filename=log_filename,
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
+    logger = logging.getLogger(__name__)
+    logger.info(f"Starting CrewAI research for topic: {research_topic}")
+    logger.info(f"Log file: {log_filename}")
+
     print("########################")
     print(f"Starting CrewAI research for: {research_topic}")
+    print(f"Detailed logs being written to: {log_filename}")
     print("########################")
 
-    # Generate a timestamped filename for the output report
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_filename = f"output/{research_topic.replace(' ', '_')}_{timestamp}_report.md"
+    # Generate a timestamped filename for the final report. This will be different from the log file.
+    report_filename = f"output/{research_topic.replace(' ', '_')}_{timestamp}_report.md"
 
     # Pass the dynamic output filename to the write_report_task
-    crew.tasks[-1].output_file = output_filename  # Assuming write_report_task is the last task
+    crew.tasks[-1].output_file = report_filename  # Assuming write_report_task is the last task
 
     result = crew.kickoff(inputs={"research_topic": research_topic})
 
-    print("\n\n########################")
-    print("## Result Details ##")
-    print("########################\n")
+    logger.info("CrewAI workflow completed.")
+    logger.info(f"Final report saved to: {report_filename}")
 
-    # Access and print individual task outputs
-    for i, task in enumerate(crew.tasks):
-        print(f"--- Task {i+1}: {task.description} ---")
-        # Ensure task.output is not None and handle non-string outputs explicitly
-        if task.output:
-            print(task.output.raw_output if hasattr(task.output, 'raw_output') else str(task.output))
-        else:
-            print("No output available for this task.")
-        print("\n")
-
-    print(f"\n\n######### Final Report #########\n")
-    print(result)
-    print(f"\n\nFinal report saved to: {output_filename}")
+    print(f"\n\n######### CrewAI Workflow Completed #########\n")
+    print(f"Detailed logs available in: {log_filename}")
+    print(f"Final report available in: {report_filename}")
+    print("\n")

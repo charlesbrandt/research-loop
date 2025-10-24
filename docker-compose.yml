@@ -15,3 +15,16 @@ services:
     # Keep container running
     command: tail -f /dev/null
     stop_grace_period: 0s
+
+  # SearxNG (Web Search)
+  searxng:
+    image: searxng/searxng
+    container_name: searxng
+    restart: unless-stopped
+    ports:
+      - 8888:8080 # Expose port 8888 for the local SearxNG instance
+    environment:
+      - BASE_URL=http://localhost:8888
+      - SEARXNG_SETTINGS_PATH=/etc/searxng/settings.yml
+    volumes:
+      - ./searxng:/etc/searxng

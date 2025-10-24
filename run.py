@@ -17,6 +17,7 @@ from pydantic import BaseModel, RootModel, Field
 from crewai import Agent, Task, Crew, Process
 from crewai.tasks import TaskOutput
 from crewai.llm import LLM
+from src.tools.search_tools import SearXNGSearchTool
 from crewai_tools import FileReadTool, FileWriterTool
 
 
@@ -380,18 +381,21 @@ def handle_experimentation_phase(project_config, methodology_content):
     for name, props in crew_defs["agents"].items():
         agents[name] = Agent(llm=llm, **props)
 
-    # Step 1: Experiment Designer creates the experiment protocol
+    # This needs to be instantiated here to pick up the SEARXNG_BASE_URL env var
+    # TODO: Refactor tool initialization in run.py. CrewAI tools have
+    # an odd life cycle when passed to dynamically defined crews.
+    search_tool = SearXNGSearchTool()
+
     experiment_protocol_file_path = os.path.join(DESIGN_DIR, "EXPERIMENT_PROTOCOL.md")
     experiment_protocol_task = Task(
         agent=agents["ExperimentDesigner"],
         name="Design Experiment Protocol",
-        description=crew_defs["tasks"]["design_experiment_protocol"][
-            "description"
-        ].format(methodology_content=methodology_content),
-        expected_output=crew_defs["tasks"]["design_experiment_protocol"][
-            "expected_output"
-        ],
+        description=crew_defs["tasks"]["design_experiment_protocol"]["description"]
+        .format(methodology_content=methodology_content)
+        .format(search_tool_name=search_tool.name),
+        expected_output=crew_defs["tasks"]["design_experiment_protocol"]["expected_output"],
         output_file=experiment_protocol_file_path,
+        tools=[search_tool],
     )
 
     experiment_design_crew = Crew(
